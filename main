@@ -1,0 +1,290 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 25 08:10:25 2021
+
+@author: YaoXin
+"""
+
+import six
+
+'Etape 1 : Détermination de l’alphabet et des fréquences de caractères'
+
+def open_text_et_count_carac(txt):
+    #ouvrir le texte en binaire
+    text = open(txt,'rb').read()
+    #print(len(set(text)))
+    #creer un dic 
+    count = {}
+    #parcourir tous les carac dans le text
+    #if carac pas dans count, le ajouter dans le dic count et count[carac]= 1
+    #if carac deja dans count, count[carac]=count[carac]+1
+    for carac in text:
+        if carac not in count:
+            count[carac]=1
+        else:
+            count[carac]=count[carac]+1
+    #mise en ordre count: selon la valeur de count,faire l'ordre croissant
+    count_avec_ordre = sorted(count.items(),key=lambda x:x[1])
+    return count_avec_ordre
+    
+
+    
+
+
+'Etape 2 : Construction de l’arbre de codage'
+'Etape 3 : Codage et compression du texte initial'
+###=============================
+#   cree une classe BNode
+###=============================
+class BNode:
+    def __init__(self,label,frequant,l_child=None,r_child=None):
+        self.label = label
+        self.frequant = frequant
+        self.l_child = l_child
+        self.r_child = r_child
+        
+        
+    def get_frequant(self):
+        return self.frequant
+    
+    def get_label(self):
+        return self.label
+
+
+
+###=====================================================
+#  creer une classe HuffmanTree de donnee recursive 
+###=====================================================             
+class HuffmanTree(BNode):
+    def __init__(self,label,frequant,l_child,r_child):
+        super().__init__(label,frequant,l_child,r_child)
+    
+    def root(self):
+        return self
+    
+    def get_frequant(self):
+        return self.root().frequant
+    
+    def get_l_child(self):
+        return self.l_child
+    
+    def get_r_child(self):
+        return self.r_child
+   
+    def codage(self,dic_code,code):
+        #si ce noed est une feuill, return
+        #on ajoute '0' si parcour a gauche, ajoute '1' si a droite
+        if (self.root().get_l_child() == None) and (self.root().get_l_child()== None):
+            dic_code[self.root().get_label()] = code
+        else:
+            self.get_l_child().codage(dic_code,code + '0')
+            self.get_r_child().codage(dic_code,code + '1')
+        #dic_code(type dic)
+        return dic_code
+    
+    
+###=====================================
+#   Fonctions
+###=====================================
+        
+    
+def cree_arbres(list_count):
+    list_arbre = []
+    for i in list_count:
+        #i[0] est carac(label)
+        #i[1] est frequan
+        h=HuffmanTree(i[0],i[1],None,None) 
+        list_arbre.append(h)
+    return list_arbre
+
+
+def cree_arbre_huffman(list_arbres):
+        #car on va ajouter nouveau arbre(composer par deux node) dans list_arbres
+        #donc,si list_node>1, il faut mise en ordre chaque fois selon les frequan
+    while len(list_arbres) != 1:
+        #list_arbre_avec_ordre = sorted(list_arbre,key=lambda x:x.get_frequent())
+        list_arbres.sort(key=lambda x:x.get_frequant())
+    
+        #choisir les deux premier element dans list_arbres(les frequan sont plus petit)
+        l_child = list_arbres[0]
+        r_child = list_arbres[1]
+            
+        fre = l_child.get_frequant() + r_child.get_frequant()
+        #creer un nouveau arbre(il composer par deux node)(node father)
+        nouveau_node = HuffmanTree(None,fre,l_child,r_child)
+        #suprimer les deux premier node dans list_arbres
+        list_arbres = list_arbres[2:]
+        #ajouter nouveau_node dans list_arbres
+        list_arbres.append(nouveau_node)
+    #le premier element dans list_arbres est le arbre que on veut
+    return list_arbres[0]
+
+
+'Etape 4 : le taux de compression obtenu'
+
+def get_nb_carac_total_text(txt):
+    #caractere total pour le text donnee
+    text = open(txt,'r').read()
+    words = text.rstrip()
+    nb_carac_total_text = len(words)
+    return nb_carac_total_text
+    
+
+def get_volume_initial(nb_carac_total_text):
+    #d'apres ASCII, chaque caractere a 8 bits
+    #volume initial = 8 * nb_carac_text
+    return nb_carac_total_text*8
+
+def get_volume_final(list_count,dic_codage):
+    #i[0] est carac(label)
+    #i[1] est frequan
+    volume = 0
+    for i in list_count:
+        #j est chaque item pour dic_codage
+        #j[0] est carac
+        #j[1] est codage
+        for j in dic_codage.items():
+            #volume final = somme de volume de chaque carac
+            #volume de chaque carac = frequan_carac * nb_codage
+            if i[0] == j[0]:
+                nb_codage = len(str(j[1]))
+                volume = volume + i[1]*nb_codage
+    return volume
+
+def taux_compression(volume_init,volume_final):
+    return 1-(volume_final/volume_init)
+            
+    
+
+
+'Etape 5 : le nombre moyen de bits de stockage d’un caractère dans le texte codé'
+        
+def nb_moy_text_compresse(volume_final,nb_carac_total_text):
+    return (volume_final/nb_carac_total_text)
+
+
+'Etape 6 : compress'
+
+def compress(txt,outputfilename):
+    #carac_freq (type list)
+    carac_freq = open_text_et_count_carac(txt)
+    list_arbre = cree_arbres(carac_freq)
+    f = open(txt, 'rb')
+    filedata = f.read()
+    # la somme de carac dans le texte
+    filesize = f.tell()
+    #length est le somme de carac different dans le texte
+    length = len(carac_freq)
+    output = open(outputfilename,'wb')
+    #compress les carac
+    #Un nombre de type int a 4 octets, il est donc divisé en 4 octets et écrit dans le fichier de sortie(fichier.bin)
+    a4 = length & 255
+    length = length >> 8
+    a3 = length & 255
+    length = length >> 8
+    a2 = length & 255
+    length = length >> 8
+    a1 = length & 255
+    output.write(six.int2byte(a1))
+    output.write(six.int2byte(a2))
+    output.write(six.int2byte(a3))
+    output.write(six.int2byte(a4))
+    #compress les frequan
+    for x in carac_freq:
+        output.write(six.int2byte(x[0]))
+        #x[1] est le frequant de carac
+        temp = x[1]
+        # pour le frequant aussi, c'est le type int, il est donc divisé en 4 octets et écrit dans le fichier de sortie(fichier.bin)
+        a4 = temp & 255
+        temp = temp >> 8
+        a3 = temp & 255
+        temp = temp >> 8
+        a2 = temp & 255
+        temp = temp >> 8
+        a1 = temp & 255
+        output.write(six.int2byte(a1))
+        output.write(six.int2byte(a2))
+        output.write(six.int2byte(a3))
+        output.write(six.int2byte(a4))
+    
+    #cree l'arbre huffman
+    arbre_huff = cree_arbre_huffman(list_arbre)
+    #cree dic_codage
+    dic_codage = arbre_huff.codage({},'')
+    
+    #compress les codage(combiaison de 01), regrouper par 8
+    code = ''
+    for i in range(filesize):
+        key = filedata[i]
+        code = code + dic_codage[key]
+        out = 0
+        while len(code) > 8:
+            for x in range(8):
+                out = out << 1
+                if code[x] == '1':
+                    out = out | 1
+            code = code[8:]
+            output.write(six.int2byte(out))
+            out = 0
+    #print("ok")
+    
+    #il faut traiter le code de moins de 8 bits restant
+    output.write(six.int2byte(len(code)))
+    out = 0
+    for i in range(len(code)):
+        out = out << 1
+        if code[i] == '1':
+            out = out | 1
+    for i in range(8 - len(code)):
+        out = out << 1
+    # écrit le derner carac dans le fichier de sortie(fichier.bin)
+    output.write(six.int2byte(out))
+ 
+    # fermer
+    output.close()
+
+'Etape 6 : mettre tout les cara et sa frequant dans le fichier.txt et le sort'  
+def cree_fichier_carac_freq(txt,outputfilename):
+    ##ouvrir le texte
+    text = open(txt,'r').read()
+    count = {}
+    for carac in text:
+        if carac not in count:
+            count[carac]=1
+        else:
+            count[carac]=count[carac]+1
+    count_avec_ordre = sorted(count.items(),key=lambda x:x[1])
+    data = open(outputfilename,'w+')
+    print(len(count_avec_ordre),file=data)
+    for element in count_avec_ordre:
+        print(element[0], ' : ', element[1],file=data)
+    data.close()
+
+
+
+
+###=============================================
+# Test
+###=============================================
+
+if __name__ == '__main__':
+    #x est list de carac avec sa frequant
+    x=open_text_et_count_carac("extraitalice.txt")
+    #y est le list de arbre(list de node)pour creer arbre huffman
+    y=cree_arbres(x)
+    #z est l'arbre huffman
+    z=cree_arbre_huffman(y)
+    #t est dic de codage pour chaque carac
+    t= z.codage({},'')
+    nb_carac_total_text = get_nb_carac_total_text("extraitalice.txt")
+    v_i = get_volume_initial(nb_carac_total_text)
+    v_f = get_volume_final(x,t)
+    print("le taux de compression pour cet article est: ",taux_compression(v_i,v_f))
+    print("le nombre moyen de caractères dans cet article est: ", nb_moy_text_compresse(v_f,nb_carac_total_text))
+    
+    compress("extraitalice.txt","extraitalice_compre.bin")
+    cree_fichier_carac_freq("extraitalice.txt","extraitalice_freq.txt")
+
+
+
+
