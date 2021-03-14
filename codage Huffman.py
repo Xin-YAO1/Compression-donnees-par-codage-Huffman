@@ -296,7 +296,7 @@ def cree_fichier_carac_freq(txt,outputfilename):
     print(len(count_avec_ordre),file=data)
     #mettre chaque carac et la frequance dedans
     for element in count_avec_ordre:
-        print(element[0], ' : ', element[1],file=data)
+        print(element[0], '  ', element[1],file=data)
     data.close()
 
 
