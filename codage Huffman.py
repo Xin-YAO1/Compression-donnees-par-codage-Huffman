@@ -205,7 +205,9 @@ def compress(txt,outputfilename):
     #Un nombre de type int a 4 octets, il est donc divisé en 4 octets
     #un octet a 8 bits
     #par exemple 900 en binaire est 00000000 00000000 00000011 10000100, donc a4=10000100, a3=00000011 a2=a1=00000000
+    #a4 est le derniere 8 bits(le 4eme octet)
     a4 = length&255
+    #on deplacer length a droite de 8 bits pour obtenir le 3eme octet
     length = length>>8
     a3 = length&255
     length = length>>8
@@ -221,6 +223,7 @@ def compress(txt,outputfilename):
     '''partie 2: compress les carac et ses frequance'''
     for x in carac_freq:
         #x[0] est le carac
+        #car les carac sont lu par binaire, donc c'est un nombre entre [0,255],donc on peut directement utiliser la fonction six.int2byte()
         output.write(six.int2byte(x[0]))
         #x[1] est le frequant de carac
         #type temp est int aussi
